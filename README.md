@@ -5,7 +5,7 @@
 - 学校：东北林业大学 
 - 专业年级：20级本科 软件工程
 - 个人或组队：个人
-- 个人博客园地址: https://www.cnblogs.com/nefu-wangxun/ 欢迎相互交流学习
+- 博客园地址: https://www.cnblogs.com/nefu-wangxun/ 欢迎相互交流学习
 
 ### 项目简介
 
