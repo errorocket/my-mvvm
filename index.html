@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        #root{
+            margin: 0px;
+            padding: 20px;
+            width: 800px;
+            height: 400px;
+            background-color: pink;
+            color:gray;
+        }
+    </style>
+    <title>测试mvvm框架</title>
+</head>
+<body>
+    <!--模块化引入-->
+    <script type="module" src="./main.ts"></script>
+    
+    <!--单向数据绑定，双向数据绑定，深度数据劫持，消息的订阅与发布-->
+    <div id="root">
+        <h3>标题: {{ title }}</h3>
+        <h3>内容: 偶尔想念, {{ content.poem }}</h3>
+        双向数据绑定: <input type="text" placeholder="Please type the content ..." v-model="content.poem" />
+        单向数据绑定: <input type="text" placeholder="Please type the title ..." v-bind="title" />
+    </div>
+</body>
+</html>
