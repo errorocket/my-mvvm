@@ -83,8 +83,10 @@
 
 //引入模板编译器
 import Compiler from "../compiler/Compiler";
+
 //引入依赖收集器
 import Dep from "../dep/Dep";
+
 //引入数据劫持方法
 import reactive from "../reactive/reactive";
 
@@ -123,6 +125,7 @@ export default class ViewModel {
 /**
  * 对传来的数据对象进行数据劫持
  */
+
 import ViewModel from '../mvvm-core';
 
 export default function reactive (vm:ViewModel, data:Object) {
@@ -135,8 +138,6 @@ export default function reactive (vm:ViewModel, data:Object) {
         set: (target, key, value) => {
             //修改数据，并记录是否修改成功
             const isSuccess = Reflect.set(target, key, value); //target[key] = value
-
-            //console.log(key, value);
 
             //数据修改时，通知并执行对应的回调函数数组中的回调函数
             vm.dep.notify(key);
@@ -218,7 +219,7 @@ export default class Compiler {
 }
 ```
 
-#### customDirective对象
+#### customDirectives对象
 
 > 封装了自定义指令，根据编译结果，映射到对应的处理方法
 
@@ -251,19 +252,18 @@ export default {
     },
     model(vm:ViewModel, node:HTMLElement, value:String) {
         //初次渲染元素节点中的value
-        const callBack = () => node.value = getDeepValue(vm.$data, value);
+        const callBack = () => node.value = getDeepValue(vm.$data, value);//获取vm.$data中的属性值
         callBack();
 
         //收集依赖:实现数据的双向绑定
         const prop = value.split('.').slice(-1);//获取变量名
         vm.dep.add(prop, callBack);
-        // console.log('modle', value);
+       
 
         //绑定input监听事件
         node.addEventListener('input', () => {
-            // vm.$data[value] = node.value;
+            //更新vm.$data中的属性值
             setDeepValue(vm.$data, value, node.value);
-            // console.log(getDeepValue(vm.$data, value));
         }, false)
         
         //移除页面中的v-model属性
@@ -277,7 +277,7 @@ export default {
         const callBack = () => {
             //将文本节点内容中的插值语法表达式，替换成插值语法表达式中变量对应的值，如:{{ title }} -> title
             node.textContent = text.replace(isInterpolationSyntax, (textNode, key) => {
-                key = key.trim(); //为变量名去空格
+                key = key.trim();
                 variableName = key; //保存变量名
                 return getDeepValue(vm.$data, key);
             })
@@ -377,7 +377,7 @@ export function getDeepValue(obj:Object,path:String){
 export function setDeepValue(obj:Object, path:String, newValue:String){
     let res = obj;
     let current = '';
-    let pathArr = path.split('.'); //形如:['a', 'b', 'c']
+    let pathArr = path.split('.');
     let n = pathArr.length;
     while(current = pathArr.shift()){
         n--;
@@ -460,10 +460,13 @@ test('测试: v-bind 和 插值语法', () => {
     //测试初始渲染
     expect(document.getElementById('poemContent').innerText === '偶尔想念').toBe(true);
     expect(document.getElementById('input').value === '偶尔想念').toBe(true);
+    
     //修改poem
     vm.$data.poem = '经常偶尔';
+    
     //测试文本节点是否正常的响应式更新
     expect(document.getElementById('poemContent').innerText === '经常偶尔').toBe(true);
+    
     //测试单向数据绑定是否成功，input中的数据应当不随着poem的改变而更新
     expect(document.getElementById('input').value === '偶尔想念').toBe(true);
 })
@@ -486,16 +489,20 @@ test('测试: 深度数据劫持 和 消息订阅与发布', () => {
 
     //一旦d值被修改，由于对data数据进行了深度数据劫持，可以检测到d值修改，同时通知消息回调函数执行
 
-    
+    //通过result是否修改，判断回调函数是否执行
     let result = '';
+    
     //消息回调函数
     const callBack = () => {
         result = 'd被修改了';
     }
+    
     //对d进行依赖收集
     vm.dep.add('d', callBack);
+    
     //修改d值
     vm.$data.a.b.c.d = 2;
+    
     expect(result === 'd被修改了').toBe(true);
     
 })
@@ -538,7 +545,6 @@ test('测试: 深度数据劫持 和 消息订阅与发布', () => {
 
 ```ts
 //引入mvvm框架的核心，即:ViewModel类
-
 import ViewModel from "./mvvm-core";
 
 const vm = new ViewModel({
