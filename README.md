@@ -97,7 +97,7 @@ import Dep from "../dep/Dep";
 import reactive from "../reactive/reactive";
 
 export default class ViewModel {
-    $el:HTMLDivElement;
+    $el:HTMLElement;
     $data:Object;
     dep:Dep
     compiler:Compiler
@@ -186,7 +186,7 @@ export default class Compiler {
     }
 
     //对节点进行初步编译
-    compile($el:HTMLDivElement){
+    compile($el:HTMLElement){
 
         const childNodes = $el.childNodes;  //得到目标容器对象的所有子节点
 
@@ -368,7 +368,7 @@ export default class CompilerUtils {
 
 
 //获取对象的深层次属性值
-export function getDeepValue(obj:Object,path:String){
+export function getDeepValue(targetObj:Object,path:String){
     let res = obj;
     let current = '';
     let pathArr = path.split('.'); //形如:['a', 'b', 'c']
@@ -380,7 +380,7 @@ export function getDeepValue(obj:Object,path:String){
 
 
 //设置对象的深层次属性值
-export function setDeepValue(obj:Object, path:String, newValue:String){
+export function setDeepValue(targetObj:Object, path:String, newValue:String){
     let res = obj;
     let current = '';
     let pathArr = path.split('.');
@@ -576,13 +576,13 @@ const vm = new ViewModel({
 
 ### 后记：思考
 
-> my-mvvm 框架只是简单的实现了 数据绑定，数据劫持，消息的订阅与发布，模板解析，依赖收集，响应式页面等基础功能
+> 1. my-mvvm 框架简单的实现了 数据绑定，数据劫持，消息的订阅与发布，模板解析，依赖收集，响应式页面等基础功能
 >
 > 由于时间有限，后续会不断的完善现有功能并扩展 my-mvvm 框架
 >
 > 
 >
-> 通过自己写一个简易的 MVVM 框架让我对此类框架的底层设计有了更深层次的认识
+> 2. 通过自己写一个简易的 MVVM 框架让我对此类框架的底层设计有了更深层次的认识
 >
 > 也更加意识到了相较于编码去实现一个框架
 >
@@ -590,5 +590,5 @@ const vm = new ViewModel({
 >
 > 
 >
-> 这次训练营真的收获了很多，希望可以更加充实的度过刚刚到来的2023年，慢慢成长，逐渐发光
+> 3. 这次训练营真的收获了很多，希望可以更加充实的度过刚刚到来的2023年，慢慢成长，逐渐发光
 
