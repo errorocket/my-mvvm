@@ -6,17 +6,16 @@
 ### 仓库说明
 
 - 用于存放2023百度前端实战训练营的大作业：实现一个简易的 MVVM 框架
+
+### 项目简介
+
+- 项目名称：my-mvvm
+- 功能实现：数据深度劫持，数据单向和双向绑定，消息的订阅与发布，依赖收集，模板解析，响应式页面更新
 - 作者：王勋
 - 学校：东北林业大学 
 - 专业年级：20级本科  软件工程
 - 个人或组队：个人
 - 博客园地址:  https://www.cnblogs.com/nefu-wangxun/  欢迎相互交流学习
-
-### 项目简介
-
-- 项目名称：my-mvvm
-
-- 功能实现：数据深度劫持，数据单向和双向绑定，消息的订阅与发布，依赖收集，模板解析，响应式页面更新
 
 ### 亮点
 
@@ -98,7 +97,7 @@ import Dep from "../dep/Dep";
 import reactive from "../reactive/reactive";
 
 export default class ViewModel {
-    $el:HTMLElement;
+    $el:HTMLDivElement;
     $data:Object;
     dep:Dep
     compiler:Compiler
@@ -183,7 +182,7 @@ export default class Compiler {
         this.vm = vm;
 
         //初次编译
-        this.compile(this.vm.$el as HTMLDivElement);
+        this.compile(this.vm.$el);
     }
 
     //对节点进行初步编译
@@ -203,7 +202,7 @@ export default class Compiler {
     }
 
     //编译元素节点
-    compileElement(vm:ViewModel, node){
+    compileElement(vm:ViewModel, node:HTMLElement){
         const attrs = node.attributes;  //获取元素节点的所有属性
         [...attrs].forEach(attr => {
             //判断属性名是否为自定义指令
@@ -216,7 +215,7 @@ export default class Compiler {
     }
 
     //编译文本节点
-    compileText(vm:ViewModel, node){
+    compileText(vm:ViewModel, node:HTMLElement){
         const text = node.textContent;
         if(isInterpolationSyntax.test(text)){
             //如果符合插值语法对应的正则表达式,进行插值语法的解析
