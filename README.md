@@ -18,6 +18,7 @@
   - 消息的订阅与发布
   - 模板解析   (初次渲染)
   - 响应式页面更新   (响应式渲染)
+  - 实现 Dom Diff 算法  (最小代价的更新真实dom)
 - 作者：王勋
 - 学校：东北林业大学 
 - 专业年级：20级本科  软件工程
@@ -36,6 +37,10 @@
   - 实现Compiler类，完成模板解析，对页面进行初始渲染，并可将不同自定义指令方便的映射到对应的处理方法上
   - 构建了customDirectives对象，对自定义指令进行了封装，使自定义指令易管理，易扩展
   - 实现Dep类，进行依赖收集，可便捷的帮助实现数据的双向绑定，响应式页面，以及消息的订阅与发布
+  - 实现了 Dom Diff 算法
+    - 可实现虚拟节点的创建，虚拟节点到真实dom节点的渲染，真实dom节点在页面的渲染
+    - 可以完成新旧虚拟节点的比对，得到用于更新真实dom的补丁包
+    - 可向旧虚拟节点对应的真实节点打补丁，最小代价的更新真实dom
 - 其他：
   - 注释详细，易于阅读和维护
   - vitest单元测试详细：对 v-model，v-bind,  {{}}插值语法，深度数据劫持，依赖收集，消息订阅与发布等都进行了测试
@@ -99,7 +104,7 @@
 
 ---
 
-### 核心类和方法分析
+### my-mvvm 核心类和方法分析
 
 #### ViewModel类
 
@@ -601,6 +606,425 @@ const vm = new ViewModel({
 - 又由于进行了依赖收集，poem修改时会通知收集到的回调函数执行
 - 所以h3标签中的 {{content.poem}} 也被重新解析和替换成新值，并重新渲染页面，同步更新
 - 而对title进行了单向数据绑定，title值不会被修改，所以h3标签中的 {{title}} 也不会被被重新解析和渲染
+
+---
+
+### 项目优化：Dom Diff 算法
+
+#### 新项目结构
+
+> 在完成 my-mvvm 的整体设计之后，新增了对 Dom Diff 算法的实现，用于减少真实dom修改的代价
+
+![](./img/新项目结构.PNG)
+
+#### Dom Diff 设计思路
+
+- 步骤1：通过用对象来模拟dom节点，构建出虚拟dom节点
+- 步骤2：将虚拟dom节点渲染成真实dom节点，并将真实节点渲染到页面上，实现页面视图的初次展示
+- 步骤3：当虚拟节点发生变更时，比对同一真实节点对应的新旧虚拟节点，得到更新真实节点的补丁包，减少不必要的dom操作
+- 步骤4：通过细粒度的比对，借助补丁包以最小代价更新真实dom
+- 步骤5：将更新后的dom渲染到页面展示 
+
+### Dom Diff 预览图
+
+- 下图为：同一真实dom对应的新旧虚拟dom的树形结构。借助其来演示和分析 Dom Diff 的核心类和方法
+
+![](./img/新旧虚拟dom对比.PNG)
+
+- 利用新旧虚拟dom的比对所得的补丁，按照上图所示，细粒度的更新了真实dom
+
+![](./img/diff演示.gif)
+
+---
+
+### Dom Diff 核心类和方法分析
+
+#### main.ts
+
+> 入口文件，创建上图所示新旧虚拟dom, 并通过比对两者差异，得到补丁，更新真实dom
+
+```ts
+import { createElement, render, renderDomToPage } from "./virtualDom";
+
+import { domDiff } from "./domDiff";
+
+import { doPatch } from "./doPatch";
+
+
+//旧的虚拟dom
+const vDomOld = createElement('ul',{class: 'list', style: 'width: 300px; height: 300px; background-color: orange'}, [
+    createElement('li',{class: 'item', 'data-index': 0},[
+        createElement('p',{class: 'text'},['第1个列表项'])
+    ]),
+    createElement('li' , {class: 'item', 'data-index': 1},[
+        createElement('p', {class: 'text'}, [
+            createElement('span', {class: 'title'},[])
+        ])
+    ]),
+    createElement ('li', {class: 'item', 'data-index': 2}, ['第3个列表项'])
+]);
+
+
+//新的虚拟dom
+const vDomNew = createElement('ul',{class: 'list-wrap', style: 'width: 300px; height: 300px; background-color: orange'}, [
+    createElement('li',{class: 'item', 'data-index': 0},[
+        createElement('p',{class: 'title'},['特殊列表项'])
+    ]),
+    createElement('li' , {class: 'item', 'data-index': 1},[
+        createElement('p', {class: 'text'}, [])
+    ]),
+    createElement ('div', {class: 'item', 'data-index': 2}, ['第3个列表项'])
+]);
+
+
+//将旧的虚拟节点转换成真实节点
+const rDom = render(vDomOld);
+
+//将真实dom对象渲染到页面上进行呈现:rootEl为目标容器对象的id
+renderDomToPage(rootEl, rDom);
+
+//对比新旧虚拟dom对象，生成补丁包
+const pathches = domDiff(vDomOld, vDomNew);
+
+//为真实dom打补丁
+doPatch(rDom, pathches);
+
+//将更新后的真实dom渲染到页面上
+renderDomToPage(rootEl, rDom);
+```
+
+#### Element.ts
+
+> 封装元素节点的相关信息，辅助生成虚拟节点
+
+```ts
+//将元素节点的信息封装到虚拟节点中
+
+class Element {
+    constructor(type, props, children){
+        this.type = type;
+        this.props = props;
+        this.children = children;
+    }
+}
+
+export { Element } ;
+```
+
+#### virtualDom.ts
+
+> 完成虚拟节点的创建，虚拟节点到真实节点的渲染，真实节点到页面的渲染
+
+```ts
+import { Element } from "./Element";
+
+//创建虚拟节点
+function createElement(type, props, children) {
+    return new Element(type, props, children);
+}
+
+//为目标节点新增属性
+function setAttrs(node, prop, value) {
+    switch(prop){
+        case 'value':
+            if(node.nodeType === 'INPUT' || node.nodeType === 'TEXTAREA'){
+                //为input框和textarea设置属性值
+                node.value = value;
+            }else{
+                node.setAttribute(prop, value);
+            }
+            break;
+
+        case 'style':
+            //设置样式
+            node.style.cssText = value;
+            break;
+        
+        default:
+            //将其他类型的属性设置到节点上
+            node.setAttribute(prop, value);
+            break;
+    }
+
+}
+
+//将虚拟节点对象转换成真实节点对象
+function render(vDom) {
+    //解构vDom属性并创建真实的节点对象
+    const {type, props, children} = vDom,
+          el = document.createElement(type);
+
+    //为新创建的真实节点对象新增属性
+    for(let prop in props){
+        setAttrs(el, prop, props[prop]);
+    }
+
+    //为Element类型的虚拟节点的子节点进行转换处理
+    children.map((c) => {
+
+        //如果子节点为Element类型，进行递归转换处理
+        c =  c instanceof Element
+             ?
+             render(c)
+             :
+             document.createTextNode(c); //否则创建文本节点并返回
+        
+        //将子节点添加到el节点中
+        el.appendChild(c);
+    })
+    
+    //将转换出的真实节点对象返回
+    return el;
+}
+
+//将真实dom对象渲染到页面进行呈现
+function renderDomToPage(rootEl, rDom){
+    document.getElementById(rootEl).appendChild(rDom);
+}
+
+export { createElement, render, renderDomToPage, setAttrs};
+```
+
+#### 定义补丁的格式
+
+> 定义新旧虚拟节点比对之后，补丁的存放形式
+
+```ts
+//补丁包的示例
+
+const patchExample = {
+    //需要打补丁的节点标号
+    0:[ 
+        //每个节点的补丁是一个数组
+
+        //每个具体的补丁用一个对象刻画
+        {
+            type:'ATTR', //补丁的类型
+            attrs:{} //需要更新或修改的值
+        },
+        {
+            //一个节点可以有多个补丁对象
+        }
+    ],
+    1:[
+        {
+            type:'TEXT',
+            text:newText //需要更新的文本值
+        }
+    ],
+    2:[
+        {
+            type:'REMOVE', //需要移除的节点
+            index:2
+        }
+    ],
+    3:[
+        {
+            type:'REPLACE', //需要替换的节点
+            node:newNode
+        }
+    ]
+}
+```
+
+#### patchTypes
+
+> 封装补丁的类型: 目前实现了4大类，后续会不断完善和扩充
+
+```ts
+//封装补丁类型
+export const ATTR = 'ATTR';
+export const TEXT = 'TEXT';
+export const REPLACE = 'REPLACE';
+export const REMOVE = 'REMOVE';
+```
+
+#### domDiff.ts
+
+> 新旧dom节点的比对，得到补丁
+
+```ts
+import { ATTR, TEXT, REPLACE, REMOVE } from "./pathTypes";
+
+//存放对比新旧虚拟dom之后所得的整个补丁包
+let patches = {};
+//用于记录深度遍历虚拟dom树时的虚拟节点的标号
+let vNodeIndex = 0;
+
+//对比新旧虚拟dom，返回补丁
+function domDiff(vDomOld, vDomNew) {
+    let index = 0;
+    //遍历虚拟节点
+    vNodeWalk(vDomOld, vDomNew, index);
+    return patches;
+}
+
+//遍历虚拟节点
+function vNodeWalk(oldNode, newNode, index){
+    //存放当前节点的补丁,每个节点有自己的补丁
+    let vNodePatch = [];
+
+    if(!newNode){
+        //如果新的节点已经不存在
+        vNodePatch.push({
+            type:REMOVE,
+            index
+        })
+    }else if(typeof oldNode === 'string' && typeof newNode === 'string'){
+        //如果均为字符串类型的文本节点且内容不相同
+        if(oldNode !== newNode){
+            vNodePatch.push({
+                type:TEXT,
+                text:newNode
+            })
+        }
+    }else if(oldNode.type === newNode.type){
+        //如果新旧虚拟节点的类型相同，则进一步比较属性，得到可能存在的属性补丁
+        const attrPatch = attrWalk(oldNode.props, newNode.props);
+        if(Object.keys(attrPatch).length > 0){
+            //如果存在属性补丁，则将属性补丁添加到当前节点的补丁中
+            vNodePatch.push({
+                type:ATTR,
+                attrs:attrPatch
+            })
+        }
+
+        //继续对比新旧虚拟dom的子节点
+        childrenWalk(oldNode.children, newNode.children);
+    }else{
+        //出现了替换情况, 换成新的虚拟节点
+        vNodePatch.push({
+            type:REPLACE,
+            newNode
+        })
+    }
+
+    if(vNodePatch.length > 0){
+        //如果当前节点存在补丁，将该节点的补丁包放到整个虚拟dom的补丁包中
+        patches[index] = vNodePatch;
+    }
+
+}
+
+//对比新旧虚拟节点的属性，返回可能存在的属性补丁
+function attrWalk(oldProps, newProps) {
+    //存放节点的属性补丁
+    let attrPatch = {};
+
+    for(let prop in oldProps) {
+        //如果修改了旧节点的属性
+        if(oldProps[prop] !== newProps[prop]){
+            //更新为新的属性值
+            attrPatch[prop] = newProps[prop];
+        }
+    }
+
+    for(let prop in newProps) {
+        //如果在旧节点上新增了属性
+        if(!oldProps.hasOwnProperty(prop)){
+            //保存新的属性值
+            attrPatch[prop] = newProps[prop];
+        }
+    }
+
+    return attrPatch;
+}
+
+//遍历对比新旧dom的子节点
+function childrenWalk(oldChildren, newChildren) {
+    //借助childIndex获取newChildren中的对应的子节点
+    oldChildren.map((oldChild, childIndex) => {
+        //遍历子节点， ++vNodeIndex用于更新节点的下标
+        vNodeWalk(oldChild, newChildren[childIndex], ++vNodeIndex);
+    })
+}
+export { domDiff };
+```
+
+#### doPatch.ts
+
+> 往真实dom上打补丁，细粒度的更新真实dom，减少更新代价
+
+```ts
+import { ATTR, TEXT, REPLACE, REMOVE } from "./pathTypes";
+import { render, setAttrs } from "./virtualDom";
+import { Element } from "./Element";
+
+//存放补丁包
+let finalPatches = {},
+    rNodeIndex = 0;//真实节点的编号
+
+//为真实dom打补丁
+function doPatch(rDom, patches) {
+    finalPatches = patches;
+    //遍历真实节点
+    rNodeWalk(rDom)
+}
+
+//遍历真实节点
+function rNodeWalk(rNode) {
+    //取出当前节点的补丁和当前节点的子节点
+    const rNodePatch = finalPatches[rNodeIndex++],
+        childNodes = rNode.childNodes;
+
+    //递归处理当前节点的子节点
+    [...childNodes].map(child => {
+        rNodeWalk(child);
+    })
+
+    if(rNodePatch){
+        //如果当前节点存在对应的补丁, 为当前节点进行打补丁的操作
+        doPatchAction(rNode, rNodePatch);
+    }
+}
+
+//为存在补丁的真实节点打补丁
+function doPatchAction(rNode, rNodePatch) {
+    rNodePatch.map(patch => {
+        //根据补丁的类型，进一步处理
+        switch(patch.type) {
+            //节点属性需要打补丁
+            case ATTR:
+                for(let key in patch.attrs) {
+                    //遍历补丁包中的attrs对象
+                    const value = patch.attrs[key];
+                    if(value){
+                        //如果属性值存在，则更新真实dom中的对应属性值
+                        setAttrs(rNode, key, value);
+                    }else{
+                        //属性不存在则移除该属性
+                        rNode.removeAttribute(key);
+                    }
+                }
+                break;
+            //更新节点文本值
+            case TEXT:
+                rNode.textContent = patch.text
+                break;
+            //替换为新节点
+            case REPLACE:
+                const newNode = (patch.newNode instanceof Element)
+                                ?
+                                render(patch.newNode)//先将虚拟节点渲染成真实节点再替换旧的真实节点
+                                :
+                                document.createTextNode(patch.newNode) //新节点为文本节点
+
+                //替换旧的真实节点
+                rNode.parentNode.replaceChild(newNode, rNode);
+                break;
+            //删除旧的真实节点
+            case REMOVE:
+                rNode.parentNode.removeChild(rNode);
+                break;
+            default:
+                break;
+        }
+
+    })
+}
+
+export { doPatch };
+```
 
 ---
 

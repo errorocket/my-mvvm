@@ -19,6 +19,7 @@
 <body>
     <!--模块化引入-->
     <script type="module" src="./main.ts"></script>
+    <script type="module" src="./domDiff/main.ts"></script>
     
     <!--单向数据绑定，双向数据绑定，深度数据劫持，消息的订阅与发布-->
     <div id="root">
@@ -27,5 +28,6 @@
         双向数据绑定: <input type="text" placeholder="Please type the content ..." v-model="content.poem" />
         单向数据绑定: <input type="text" placeholder="Please type the title ..." v-bind="title" />
     </div>
+
 </body>
 </html>
