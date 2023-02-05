@@ -625,7 +625,7 @@ const vm = new ViewModel({
 - 步骤4：通过细粒度的比对，借助补丁包以最小代价更新真实dom
 - 步骤5：将更新后的dom渲染到页面展示 
 
-### Dom Diff 预览图
+### Dom Diff 算法 效果预览
 
 - 下图为：同一真实dom对应的新旧虚拟dom的树形结构。借助其来演示和分析 Dom Diff 的核心类和方法
 
