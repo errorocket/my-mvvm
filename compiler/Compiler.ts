@@ -28,6 +28,7 @@ export default class Compiler {
     compile($el:HTMLDivElement){
 
         const childNodes = $el.childNodes;  //得到目标容器对象的所有子节点
+        // console.log(childNodes);
 
         //按照 元素节点，文本节点 两大类进行模板解析
         [...childNodes].forEach(node => {
@@ -41,9 +42,11 @@ export default class Compiler {
     }
 
     //编译元素节点
-    compileElement(vm:ViewModel, node){
+    compileElement(vm:ViewModel, node: HTMLElement){
         const attrs = node.attributes;  //获取元素节点的所有属性
+        // console.log('attrs --> ', attrs instanceof Array);
         [...attrs].forEach(attr => {
+            // console.log(attr);
             //判断属性名是否为自定义指令
             if(CompilerUtils.isDirective(attr.name)){
                 //如果包含自定义指令，获取自定义指令的具体类型并拿到自定义指令的值

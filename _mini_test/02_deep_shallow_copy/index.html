@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        function deepCopyTest() {
+            const target1 = {
+                a : {
+                    b: 'hello vue2'
+                }
+            }
+            const target2 = [1, 2, 3];
+            const target3 = {
+                a: [
+                    'b',
+                    'c',
+                    {d: 1}
+                ]
+            }
+            const res1 = deepCopy(target1);
+            const res2 = deepCopy(target2);
+            const res3 = deepCopy(target3);
+
+            console.log(res1, target1, res1 === target1);
+            console.log(res2, target2, res2 === target2);
+            console.log(res3, target3, res3 === target3);
+
+            target1.a.b = 'hello vue3';
+            console.log(res1.a.b, target1.a.b);
+        }
+        function shallowCopyTest() {
+            const target1 = {
+                a : {
+                    b: 'hello vue2'
+                }
+            }
+            const target2 = [1, 2, 3];
+            const target3 = {
+                a: [
+                    'b',
+                    'c',
+                    {d: 1}
+                ]
+            }
+            const res1 = shallowCopy(target1);
+            const res2 = shallowCopy(target2);
+            const res3 = shallowCopy(target3);
+
+            console.log(res1, target1, res1 === target1);
+            console.log(res2, target2, res2 === target2);
+            console.log(res3, target3, res3 === target3);
+
+            target1.a.b = 'hello vue3';
+            console.log(res1.a.b, target1.a.b);
+        }
+        function deepCopy(target) {
+            if (target && typeof target === 'object') {
+
+                // 确定对象的初始收集容器的类型
+                const res = target instanceof Array ? [] : {};
+                Object.keys(target).forEach(key => {
+                    const val = target[key];
+                    if (val && typeof val === 'object') {
+                        res[key] = deepCopy(val);
+                    } else {
+                        res[key] = val;
+                    }
+                });
+                return res;
+            }
+            return target;
+        }
+        function shallowCopy(target) {
+            if (target && typeof target === 'object') {
+
+                // 确定对象的初始收集容器的类型
+                const res = target instanceof Array ? [] : {};
+                Object.keys(target).forEach(key => {
+                    res[key] = target[key];
+                });
+                return res;
+            }
+            return target;
+        }
+        // deepCopyTest();
+        shallowCopyTest();
+    </script>
+</body>
+</html>

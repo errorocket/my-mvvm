@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据代理、深层数据代理</title>
+</head>
+<body>
+    <script>
+        // 1.做数据代理和不做数据代理的区别
+        // 2.做深层数据代理和浅层数据代理的区别
+
+        // 被代理者
+        const data = {
+            a: { // vip
+                b: { // svip
+                    c: 'hello mvvm' // ssvip
+                }
+            }
+        }
+        function reactive(val) {
+            return new Proxy(val, {
+                get: (target, key) => {
+                    // console.log('target --> ', target)
+                    // console.log('key ---> ', key);
+
+                    // 做深层代理
+                    const val = Reflect.get(target, key);
+                    return val !== null && typeof val === 'object' ? reactive(val) : val;
+
+                    // 不做深层代理
+                    // return Reflect.get(target, key);
+                },
+                set: (target, key, val) => {
+                    console.log('set--->', target, key, val);
+                }
+            });
+        }
+        // 代理人
+        const $data = reactive(data);
+        // console.log($data.a)
+        $data.a = {};
+        $data.a.b = {}
+    </script>
+</body>
+</html>

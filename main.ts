@@ -12,4 +12,5 @@ const vm = new ViewModel({
             title:'my mvvm'
         }
     }
-})
+});
+window.vm = vm;

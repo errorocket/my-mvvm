@@ -65,6 +65,7 @@ export default {
         const callBack = () => {
             //将文本节点内容中的插值语法表达式，替换成插值语法表达式中变量对应的值，如:{{ title }} -> title
             node.textContent = text.replace(isInterpolationSyntax, (textNode, key) => {
+                console.log('text ---> ', text);
                 key = key.trim(); //为变量名去空格
                 variableName = key; //保存变量名
                 return getDeepValue(vm.$data, key);
